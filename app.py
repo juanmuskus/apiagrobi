@@ -31,22 +31,27 @@ def prediccion_insumo():
         sql_query = text("select * from vista_precios where departamento_id = %s and municipio_id =%s and producto_id = %s" % (
             insumo.departamento_id, insumo.municipio_id, insumo.producto_id))
         df = pd.read_sql(sql_query, engine.connect())
+        if len(df)==0:
+            return jsonify({'Estado':'Error', 'Data':{'Mensaje':'No hay datos para realizar la prediccion'}})
+        df.set_index('fechapublicacion', inplace=True)
+        df = df['valor']
+        df = df.resample(insumo.frecuencia).mean()
+        model = pm.auto_arima(df)
+        pred = model.predict(n_periods=insumo.cantidad_prediccion)
+        pred = pred.astype(int)
+        pred = pred.reset_index(drop=True)
+        min_val = str(df.astype(int).min())
+        max_val = str(df.astype(int).max())
+        return jsonify({
+            'Estado': 'OK',
+            'data':{
+                'Predicciones': pred.values.tolist(),
+                'Minimo': min_val,
+                'Maximo': max_val
+            }
+        })
     except Exception as e:
-        df = str(e)
-    df.set_index('fechapublicacion', inplace=True)
-    df = df['valor']
-    df = df.resample(insumo.frecuencia).mean()
-    model = pm.auto_arima(df)
-    pred = model.predict(n_periods=insumo.cantidad_prediccion)
-    pred = pred.astype(int)
-    pred = pred.reset_index(drop=True)
-    min_val = str(df.astype(int).min())
-    max_val = str(df.astype(int).max())
-    return jsonify({
-        'Predicciones': pred.values.tolist(),
-        'Minimo': min_val,
-        'Maximo': max_val
-    })
+        print(str(e))
 
 @app.route('/ventas')
 def prediccion_ventas():
