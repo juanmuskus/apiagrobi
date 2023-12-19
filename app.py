@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 app = Flask(__name__)
 
 #url_object = URL.create("mysql+mysqlconnector",username="adminbi",password="Unicordoba@23",host="ec2-18-221-11-203.us-east-2.compute.amazonaws.com",database="insumos")
-url_object = URL.create("mysql+mysqlconnector",username="adminagro",password="Agrounicor@2023",host="74.48.111.45",database="insumos")
+url_object = URL.create("mysql+mysqlconnector",username="admin_vista",password="Unicor@2023",host="74.48.111.45",database="insumos")
 
 class Insumo:
     def __init__(self, departamento_id, municipio_id, producto_id, cantidad_prediccion, frecuencia):
