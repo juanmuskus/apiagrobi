@@ -52,7 +52,7 @@ def prediccion_insumo():
             }
         })
     except Exception as e:
-        print(str(e))
+        return jsonify({'Estado': 'Error', 'Data': {'Mensaje': f'Error específico: {str(e)}'}})
 
 @app.route('/ventas')
 def prediccion_ventas():
