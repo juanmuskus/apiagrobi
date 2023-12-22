@@ -1,11 +1,15 @@
-import datetime
 import pandas as pd
 import pmdarima as pm
 from flask import Flask, request, jsonify
+from sqlalchemy import URL,create_engine, text
 import warnings
-import mysql.connector
 warnings.filterwarnings("ignore")
+
 app = Flask(__name__)
+
+#url_object = URL.create("mysql+mysqlconnector",username="adminbi",password="Unicordoba@23",host="ec2-18-221-11-203.us-east-2.compute.amazonaws.com",database="insumos")
+url_object = URL.create("mysql+mysqlconnector",username="admin_vista",password="Unicor@2023",host="74.48.111.45",database="insumos")
+
 class Insumo:
     def __init__(self, departamento_id, municipio_id, producto_id, cantidad_prediccion, frecuencia):
         self.departamento_id = departamento_id
@@ -13,30 +17,21 @@ class Insumo:
         self.producto_id = producto_id
         self.cantidad_prediccion = cantidad_prediccion
         self.frecuencia = frecuencia
-def conexion():
-    db_username = 'admin_vista'
-    db_password = 'Unicor@2023'
-    db_host = '74.48.111.45'
-    db_name = 'insumos'
-    return mysql.connector.connect( user=db_username,
-                                    password=db_password,
-                                    host=db_host,
-                                    database=db_name,
-                                    auth_plugin='mysql_native_password')
+
 @app.route('/')
 def home():
-    return {'Status': 'Running in datetime: '+str(datetime.datetime.now())}
+    return {'Status': 'Running...'}
+
 @app.route('/insumos', methods=['POST'])
 def prediccion_insumo():
-    TiempoInicio = datetime.datetime.now()
-    conn = conexion()
     data = request.get_json()
     insumo = Insumo(**data)
     df = pd.DataFrame()
     try:
-        sql_query = "select * from vista_precios where departamento_id = %s and municipio_id =%s and producto_id = %s" % (
-            insumo.departamento_id, insumo.municipio_id, insumo.producto_id)
-        df = pd.read_sql(sql_query,conn)
+        engine = create_engine(url_object)
+        sql_query = text("select * from vista_precios where departamento_id = %s and municipio_id =%s and producto_id = %s" % (
+            insumo.departamento_id, insumo.municipio_id, insumo.producto_id))
+        df = pd.read_sql(sql_query, engine.connect())
         if len(df)==0:
             return jsonify({'Estado':'Error', 'Data':{'Mensaje':'No hay datos para realizar la prediccion'}})
         df.set_index('fechapublicacion', inplace=True)
@@ -48,13 +43,8 @@ def prediccion_insumo():
         pred = pred.reset_index(drop=True)
         min_val = str(df.astype(int).min())
         max_val = str(df.astype(int).max())
-
-        time_difference = datetime.datetime.now() - TiempoInicio
-        seconds_difference = str(time_difference.seconds)
-        print(seconds_difference)
         return jsonify({
             'Estado': 'OK',
-            'tiempo_de_ejecucion': '%s segundos' % (seconds_difference),
             'data':{
                 'Predicciones': pred.values.tolist(),
                 'Minimo': min_val,
@@ -64,7 +54,7 @@ def prediccion_insumo():
     except Exception as e:
         return jsonify({'Estado': 'Error', 'Data': {'Mensaje': f'Error específico: {str(e)}'}})
     finally:
-        conn.close()
+        engine.dispose()
         print('Proceso finalizado')
 
 @app.route('/ventas')
