@@ -4,8 +4,10 @@ import pmdarima as pm
 from flask import Flask, request, jsonify
 import warnings
 import mysql.connector
+from flask_cors import CORS
 warnings.filterwarnings("ignore")
 app = Flask(__name__)
+CORS(app)
 class Insumo:
     def __init__(self, departamento_id, municipio_id, producto_id, cantidad_prediccion, frecuencia):
         self.departamento_id = departamento_id
