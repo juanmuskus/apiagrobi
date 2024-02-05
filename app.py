@@ -5,8 +5,14 @@ from flask import Flask, request, jsonify
 import warnings
 import mysql.connector
 from flask_cors import CORS
+import logging
 warnings.filterwarnings("ignore")
 app = Flask(__name__)
+# Configure Flask logging
+app.logger.setLevel(logging.INFO)  # Set log level to INFO
+handler = logging.FileHandler('app.log')  # Log to a file
+app.logger.addHandler(handler)
+# Enable CORS
 CORS(app)
 class Insumo:
     def __init__(self, departamento_id, municipio_id, producto_id, cantidad_prediccion, frecuencia):
@@ -27,9 +33,11 @@ def conexion():
                                     auth_plugin='mysql_native_password')
 @app.route('/')
 def home():
+    app.logger.info('Petición GET home '+str(datetime.datetime.now()))
     return {'Status': 'Running in datetime: '+str(datetime.datetime.now())}
 @app.route('/insumos', methods=['POST'])
 def prediccion_insumo():
+    app.logger.info('Petición POST INFO prediccion_insumo '+str(datetime.datetime.now()))
     TiempoInicio = datetime.datetime.now()
     conn = conexion()
     data = request.get_json()
@@ -71,7 +79,13 @@ def prediccion_insumo():
 
 @app.route('/ventas')
 def prediccion_ventas():
+    app.logger.info('Petición GET prediccion_ventas '+str(datetime.datetime.now()))
     return {'Status': 'Running...'}
+
+@app.errorhandler(500)
+def server_error(error):
+    app.logger.exception('An exception occurred during a request.')
+    return 'Internal Server Error', 500
 
 if __name__ == '__main__':
     app.run(debug=True)
